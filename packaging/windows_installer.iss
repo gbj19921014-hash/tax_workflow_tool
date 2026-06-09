@@ -2,7 +2,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Local"
 #define MyAppExeName "A1-A3税务工作流.exe"
-#define RootDir AddBackslash(SourcePath) + "..\.."
+#define RootDir AddBackslash(SourcePath) + ".."
 
 [Setup]
 AppId={{D6E24D91-41CE-4E96-B4C3-2F2C32B410C8}
