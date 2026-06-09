@@ -94,13 +94,13 @@
 3. 双击运行：
 
 ```text
-tax_workflow_tool/packaging/build_windows_installer_simple.bat
+packaging/build_windows_installer_simple.bat
 ```
 
 也可以在 PowerShell 里执行：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tax_workflow_tool\packaging\build_windows_installer.ps1
+powershell -ExecutionPolicy Bypass -File .\packaging\build_windows_installer.ps1
 ```
 
 生成位置：
