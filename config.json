@@ -1,0 +1,13 @@
+{
+  "tax_country": "IT",
+  "vat_rate": 0.22,
+  "registered_vat_countries": ["DE", "IT", "ES", "FR", "NL", "PL", "GB"],
+  "exchange_rates_to_eur": {
+    "2026-MAR": {
+      "EUR": 1,
+      "PLN": null,
+      "SEK": 0.0928,
+      "GBP": null
+    }
+  }
+}
