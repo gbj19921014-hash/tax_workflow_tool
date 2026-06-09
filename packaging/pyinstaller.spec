@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path.cwd()
-APP_DIR = ROOT / "tax_workflow_tool"
+APP_DIR = ROOT
 
 
 a = Analysis(
