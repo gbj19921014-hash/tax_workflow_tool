@@ -217,6 +217,7 @@ def build_payload(input_file, month, config):
         "registered_vat_countries": sorted(registered),
         "unregistered_eu_countries": sorted(unregistered_eu),
         "rates_for_month": rates.get(month, {}),
+        "exchange_rate_source": config.get("exchange_rate_source", "config.json"),
         "summary": summary,
         "currency": currency,
         "detail": detail,
