@@ -19,9 +19,6 @@ WizardStyle=modern
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 
-[Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
-
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面图标"; GroupDescription: "附加图标："; Flags: checkedonce
 
