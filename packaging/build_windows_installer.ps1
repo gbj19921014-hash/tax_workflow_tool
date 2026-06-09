@@ -1,9 +1,9 @@
 $ErrorActionPreference = "Stop"
 
-Set-Location (Join-Path $PSScriptRoot "..\..")
+Set-Location (Join-Path $PSScriptRoot "..")
 
-python -m pip install -r tax_workflow_tool\requirements-build.txt
-python -m PyInstaller --clean --noconfirm tax_workflow_tool\packaging\pyinstaller_windows.spec
+python -m pip install -r requirements-build.txt
+python -m PyInstaller --clean --noconfirm packaging\pyinstaller_windows.spec
 
 $isccCandidates = @(
   "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
@@ -17,5 +17,5 @@ if (-not $iscc) {
   exit 0
 }
 
-& $iscc "tax_workflow_tool\packaging\windows_installer.iss"
+& $iscc "packaging\windows_installer.iss"
 Write-Host "已生成 Windows 安装包：dist\installer"
