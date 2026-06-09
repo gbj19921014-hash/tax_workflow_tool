@@ -1,14 +1,11 @@
 @echo off
 setlocal
 
-set "TOOL_DIR=%~dp0.."
-for %%I in ("%TOOL_DIR%") do set "TOOL_DIR=%%~fI"
-set "ROOT_DIR=%TOOL_DIR%\.."
+set "ROOT_DIR=%~dp0.."
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 set "LOG_FILE=%ROOT_DIR%\build_windows_installer.log"
 
 echo Building installer. Please keep this window open.
-echo Tool folder: %TOOL_DIR%
 echo Root folder: %ROOT_DIR%
 echo Log file: %LOG_FILE%
 echo.
@@ -30,7 +27,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%TOOL_DIR%\packaging\build_windows_installer.ps1" > "%LOG_FILE%" 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%\packaging\build_windows_installer.ps1" > "%LOG_FILE%" 2>&1
 
 if errorlevel 1 (
   echo.
