@@ -8,6 +8,7 @@ from tkinter import Button, Entry, Label, StringVar, Tk, filedialog, messagebox
 import pandas as pd
 
 from build_workbook import build_workbook
+from exchange_rates import fetch_ecb_rates_to_eur
 from run_workflow import build_payload, clean_json_value
 
 
@@ -39,6 +40,7 @@ class TaxWorkflowApp:
         self.pln = StringVar()
         self.sek = StringVar(value="0.0928")
         self.gbp = StringVar()
+        self.rate_source = StringVar(value="手动填写")
         self.status = StringVar(value="请选择 CSV 文件，填写月份和汇率。")
         self._build_ui()
 
@@ -59,8 +61,11 @@ class TaxWorkflowApp:
         Label(self.root, text="GBP 汇率").grid(row=4, column=0, padx=16, pady=8, sticky="w")
         Entry(self.root, textvariable=self.gbp, width=24).grid(row=4, column=1, padx=8, pady=8, sticky="w")
 
-        Button(self.root, text="生成结果", command=self.run).grid(row=5, column=1, padx=8, pady=18, sticky="w")
-        Label(self.root, textvariable=self.status, wraplength=640, justify="left").grid(row=6, column=0, columnspan=3, padx=16, pady=10, sticky="w")
+        Button(self.root, text="自动获取 ECB 汇率", command=self.fetch_rates).grid(row=5, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, textvariable=self.rate_source).grid(row=5, column=1, padx=160, pady=8, sticky="w")
+
+        Button(self.root, text="生成结果", command=self.run).grid(row=6, column=1, padx=8, pady=18, sticky="w")
+        Label(self.root, textvariable=self.status, wraplength=640, justify="left").grid(row=7, column=0, columnspan=3, padx=16, pady=10, sticky="w")
         self.root.columnconfigure(1, weight=1)
 
     def choose_file(self):
@@ -73,6 +78,22 @@ class TaxWorkflowApp:
         if not value:
             return None
         return float(value)
+
+    def fetch_rates(self):
+        try:
+            self.status.set("正在从 ECB 获取汇率...")
+            self.root.update_idletasks()
+            data = fetch_ecb_rates_to_eur()
+            rates = data["rates"]
+            self.pln.set(str(rates["PLN"]))
+            self.sek.set(str(rates["SEK"]))
+            self.gbp.set(str(rates["GBP"]))
+            source = f'ECB {data["date"]}'
+            self.rate_source.set(f"汇率来源：{source}")
+            self.status.set(f"已自动填入 {source} 汇率，可按申报口径手动修改。")
+        except Exception as error:
+            self.rate_source.set("汇率来源：手动填写")
+            messagebox.showerror("获取汇率失败", f"无法自动获取 ECB 汇率，请手动填写。\n\n{error}")
 
     def run(self):
         try:
@@ -92,6 +113,7 @@ class TaxWorkflowApp:
                 "SEK": self._rate_value(self.sek.get()),
                 "GBP": self._rate_value(self.gbp.get()),
             }
+            config["exchange_rate_source"] = self.rate_source.get()
 
             out_dir = DEFAULT_OUTPUT_DIR / month
             out_dir.mkdir(parents=True, exist_ok=True)
