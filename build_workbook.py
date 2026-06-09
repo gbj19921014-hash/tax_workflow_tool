@@ -69,6 +69,7 @@ def build_workbook(data, output_path):
             "当月汇率",
             ", ".join(f"{key}:{value if value is not None else '未填'}" for key, value in data.get("rates_for_month", {}).items()),
         ),
+        ("汇率来源", data.get("exchange_rate_source", "")),
     ]
     for row_index, (label, value) in enumerate(info_rows, start=3):
         final_sheet.cell(row=row_index, column=1, value=label).fill = PatternFill("solid", fgColor=LABEL_FILL)
