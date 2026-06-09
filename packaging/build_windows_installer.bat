@@ -2,7 +2,7 @@
 setlocal
 chcp 65001 >nul
 
-cd /d "%~dp0\..\.."
+cd /d "%~dp0\.."
 
 echo 正在制作 Windows 安装包，请不要关闭这个窗口。
 echo.
@@ -14,7 +14,7 @@ echo 第一步：调用 PowerShell 打包脚本...
 echo 如果这里停留较久，是在下载依赖或打包程序，属于正常情况。
 echo.
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "tax_workflow_tool\packaging\build_windows_installer.ps1" > "build_windows_installer.log" 2>&1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "packaging\build_windows_installer.ps1" > "build_windows_installer.log" 2>&1
 
 if errorlevel 1 (
   echo.
