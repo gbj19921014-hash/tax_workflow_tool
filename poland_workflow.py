@@ -142,8 +142,9 @@ def build_poland_payload(input_file, month, config):
     currency = [row for section in sections for row in section["currency"]]
     detail = [row for section in sections for row in section["detail"]]
     eur_total = round(sum(row["EUR金额总和"] for row in summary), 2)
-    missing_rates = sum(row["缺少汇率行数"] for row in summary)
-    tax = round(eur_total / (1 + VAT_RATE) * VAT_RATE, 2)
+    part_3a_summary = next(row for row in summary if row["项目"] == "3A")
+    part_3a_eur_total = part_3a_summary["EUR金额总和"]
+    tax = round(part_3a_eur_total / (1 + VAT_RATE) * VAT_RATE, 2)
 
     return {
         "source_file": str(input_file),
@@ -162,9 +163,9 @@ def build_poland_payload(input_file, month, config):
             {"项目": "1A-3A命中EUR总和", "金额EUR": eur_total},
             {
                 "项目": "税金",
-                "公式": "命中EUR总和/1.23*0.23",
+                "公式": "3A命中EUR总和/1.23*0.23",
                 "金额EUR": tax,
-                "缺少汇率行数": missing_rates,
+                "缺少汇率行数": part_3a_summary["缺少汇率行数"],
             },
         ],
     }

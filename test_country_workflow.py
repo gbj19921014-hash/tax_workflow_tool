@@ -47,7 +47,8 @@ class CountryWorkflowIntegrationTest(unittest.TestCase):
         payload = build_country_payload(input_file, "2026-FEB", "PL", config)
         self.assertEqual([row["命中行数"] for row in payload["summary"]], [0, 0, 9, 10])
         self.assertEqual(payload["final"][0]["金额EUR"], 130.33)
-        self.assertEqual(payload["final"][1]["金额EUR"], 24.37)
+        self.assertEqual(payload["final"][1]["公式"], "3A命中EUR总和/1.23*0.23")
+        self.assertEqual(payload["final"][1]["金额EUR"], 15.39)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             paths = write_outputs(payload, temp_dir)
