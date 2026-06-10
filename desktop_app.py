@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 import json
+import re
 import sys
 import traceback
 from pathlib import Path
 from tkinter import Button, Entry, Label, StringVar, Tk, filedialog, messagebox
 from tkinter.ttk import Combobox
+
+import pandas as pd
 
 from exchange_rates import fetch_ecb_monthly_rates_to_eur
 from workflow_service import build_country_payload, write_outputs
@@ -13,6 +16,7 @@ from workflow_service import build_country_payload, write_outputs
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = Path.home() / "Desktop" / "税务工作流输出"
 COUNTRY_OPTIONS = {"意大利 (IT)": "IT", "波兰 (PL)": "PL"}
+ACTIVITY_PERIOD_PATTERN = re.compile(r"^\d{4}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$")
 
 
 def resource_path(name):
@@ -27,6 +31,17 @@ def config_path():
     if external_config.exists():
         return external_config
     return resource_path("config.json")
+
+
+def detect_activity_periods(csv_path):
+    periods = pd.read_csv(
+        csv_path,
+        usecols=["ACTIVITY_PERIOD"],
+        dtype=str,
+        encoding="utf-8-sig",
+    )["ACTIVITY_PERIOD"]
+    normalized = periods.dropna().str.strip().str.upper()
+    return list(dict.fromkeys(value for value in normalized if ACTIVITY_PERIOD_PATTERN.fullmatch(value)))
 
 
 class TaxWorkflowApp:
@@ -82,6 +97,25 @@ class TaxWorkflowApp:
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv"), ("所有文件", "*.*")])
         if path:
             self.csv_path.set(path)
+            try:
+                periods = detect_activity_periods(path)
+                if len(periods) == 1:
+                    self.month.set(periods[0])
+                    self.status.set(f"已从 CSV 的 B 列自动识别算税月：{periods[0]}")
+                elif len(periods) > 1:
+                    self.status.set("CSV 中包含多个算税月，请手动选择。")
+                    messagebox.showwarning(
+                        "检测到多个算税月",
+                        "CSV 的 B 列包含多个月份，请确认后手动填写：\n\n" + "、".join(periods),
+                    )
+                else:
+                    self.status.set("未从 CSV 的 B 列识别到标准算税月，请手动填写。")
+            except Exception as error:
+                self.status.set("读取 CSV 算税月失败，请手动填写。")
+                messagebox.showwarning(
+                    "无法自动识别算税月",
+                    f"未能从 ACTIVITY_PERIOD（B列）读取月份，请手动填写。\n\n{error}",
+                )
 
     def _rate_value(self, value):
         value = value.strip()
