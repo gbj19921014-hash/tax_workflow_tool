@@ -54,8 +54,9 @@ def build_workbook(data, output_path):
     detail_sheet = wb.create_sheet("命中明细")
 
     final_sheet.sheet_view.showGridLines = False
-    final_sheet.merge_cells("A1:E1")
-    final_sheet["A1"] = "A1-A3未代扣代缴工作流输出"
+    final_sheet.merge_cells("A1:F1")
+    country_name = data.get("country_name", data.get("tax_country", ""))
+    final_sheet["A1"] = f"{country_name}税务工作流输出"
     final_sheet["A1"].fill = PatternFill("solid", fgColor=TITLE_FILL)
     final_sheet["A1"].font = Font(bold=True, color="FFFFFF", size=16)
 
@@ -76,27 +77,31 @@ def build_workbook(data, output_path):
         final_sheet.cell(row=row_index, column=1).font = Font(bold=True)
         final_sheet.cell(row=row_index, column=2, value=value).alignment = Alignment(wrap_text=True)
 
-    _write_table(final_sheet, 10, 1, ["A项", "名称", "命中行数", "EUR金额总和", "缺少汇率行数"], data.get("summary", []))
-    _write_table(final_sheet, 16, 1, ["项目", "公式", "金额EUR"], data.get("final", []))
-    _format_amount_columns(final_sheet, ["D"], 11)
-    _format_amount_columns(final_sheet, ["C"], 17)
+    summary_start = 10
+    summary_headers = ["项目", "名称", "命中行数", "EUR金额总和", "税金EUR", "缺少汇率行数"]
+    _write_table(final_sheet, summary_start, 1, summary_headers, data.get("summary", []))
+    final_start = summary_start + len(data.get("summary", [])) + 3
+    _write_table(final_sheet, final_start, 1, ["项目", "公式", "金额EUR", "缺少汇率行数"], data.get("final", []))
+    _format_amount_columns(final_sheet, ["D", "E"], summary_start + 1)
+    _format_amount_columns(final_sheet, ["C"], final_start + 1)
     final_sheet.freeze_panes = "A11"
 
-    _write_table(workflow_sheet, 1, 1, ["A项", "名称", "筛选口径", "金额列"], data.get("summary", []))
+    _write_table(workflow_sheet, 1, 1, ["项目", "名称", "筛选口径", "金额列", "税率"], data.get("summary", []))
     workflow_sheet.freeze_panes = "A2"
 
-    _write_table(currency_sheet, 1, 1, ["A项", "币种", "行数", "原币合计", "折EUR金额", "缺少汇率行数"], data.get("currency", []))
+    _write_table(currency_sheet, 1, 1, ["项目", "币种", "行数", "原币合计", "折EUR金额", "缺少汇率行数"], data.get("currency", []))
     _format_amount_columns(currency_sheet, ["D", "E"], 2)
     currency_sheet.freeze_panes = "A2"
 
     detail_headers = [
-        "A项",
-        "A项名称",
+        "项目",
+        "项目名称",
         "ACTIVITY_PERIOD",
         "TAX_COLLECTION_RESPONSIBILITY",
         "TRANSACTION_TYPE",
         "EXPORT_OUTSIDE_EU",
         "PRICE_OF_ITEMS_VAT_RATE_PERCENT",
+        "TOTAL_ACTIVITY_VALUE_VAT_AMT",
         "SALE_DEPART_COUNTRY",
         "SALE_ARRIVAL_COUNTRY",
         "BUYER_VAT_NUMBER",
@@ -108,7 +113,7 @@ def build_workbook(data, output_path):
         "ACTIVITY_TRANSACTION_ID",
     ]
     _write_table(detail_sheet, 1, 1, detail_headers, data.get("detail", []))
-    _format_amount_columns(detail_sheet, ["L", "M", "N"], 2)
+    _format_amount_columns(detail_sheet, ["M", "N", "O"], 2)
     detail_sheet.freeze_panes = "A2"
 
     for sheet in wb.worksheets:

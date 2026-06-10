@@ -42,5 +42,5 @@ if errorlevel 1 (
 
 echo.
 echo Done. Please check:
-echo %ROOT_DIR%\dist\installer\A1-A3税务工作流安装包.exe
+echo %ROOT_DIR%\dist\installer\欧洲税务工作流安装包.exe
 pause

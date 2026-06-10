@@ -12,7 +12,7 @@ $isccCandidates = @(
 $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if (-not $iscc) {
-  Write-Host "已生成 dist\A1-A3税务工作流。"
+  Write-Host "已生成 dist\欧洲税务工作流。"
   Write-Host "如需安装程序，请先安装 Inno Setup 6，然后重新运行本脚本。"
   exit 0
 }

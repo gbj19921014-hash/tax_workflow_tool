@@ -4,16 +4,15 @@ import sys
 import traceback
 from pathlib import Path
 from tkinter import Button, Entry, Label, StringVar, Tk, filedialog, messagebox
+from tkinter.ttk import Combobox
 
-import pandas as pd
-
-from build_workbook import build_workbook
-from exchange_rates import fetch_ecb_rates_to_eur
-from run_workflow import build_payload, clean_json_value
+from exchange_rates import fetch_ecb_monthly_rates_to_eur
+from workflow_service import build_country_payload, write_outputs
 
 
 APP_DIR = Path(__file__).resolve().parent
-DEFAULT_OUTPUT_DIR = Path.home() / "Desktop" / "A1-A3税务工作流输出"
+DEFAULT_OUTPUT_DIR = Path.home() / "Desktop" / "税务工作流输出"
+COUNTRY_OPTIONS = {"意大利 (IT)": "IT", "波兰 (PL)": "PL"}
 
 
 def resource_path(name):
@@ -33,9 +32,10 @@ def config_path():
 class TaxWorkflowApp:
     def __init__(self):
         self.root = Tk()
-        self.root.title("A1-A3未代扣代缴自动工作流")
-        self.root.geometry("720x360")
+        self.root.title("欧洲税务自动工作流")
+        self.root.geometry("760x430")
         self.csv_path = StringVar()
+        self.country = StringVar(value="意大利 (IT)")
         self.month = StringVar(value="2026-MAR")
         self.pln = StringVar()
         self.sek = StringVar(value="0.0928")
@@ -49,23 +49,33 @@ class TaxWorkflowApp:
         Entry(self.root, textvariable=self.csv_path, width=68).grid(row=0, column=1, padx=8, pady=14, sticky="we")
         Button(self.root, text="选择文件", command=self.choose_file).grid(row=0, column=2, padx=16, pady=14)
 
-        Label(self.root, text="算税月").grid(row=1, column=0, padx=16, pady=8, sticky="w")
-        Entry(self.root, textvariable=self.month, width=24).grid(row=1, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, text="算税国家").grid(row=1, column=0, padx=16, pady=8, sticky="w")
+        country_box = Combobox(
+            self.root,
+            textvariable=self.country,
+            values=list(COUNTRY_OPTIONS),
+            state="readonly",
+            width=21,
+        )
+        country_box.grid(row=1, column=1, padx=8, pady=8, sticky="w")
 
-        Label(self.root, text="PLN 汇率").grid(row=2, column=0, padx=16, pady=8, sticky="w")
-        Entry(self.root, textvariable=self.pln, width=24).grid(row=2, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, text="算税月").grid(row=2, column=0, padx=16, pady=8, sticky="w")
+        Entry(self.root, textvariable=self.month, width=24).grid(row=2, column=1, padx=8, pady=8, sticky="w")
 
-        Label(self.root, text="SEK 汇率").grid(row=3, column=0, padx=16, pady=8, sticky="w")
-        Entry(self.root, textvariable=self.sek, width=24).grid(row=3, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, text="PLN 对 EUR 汇率").grid(row=3, column=0, padx=16, pady=8, sticky="w")
+        Entry(self.root, textvariable=self.pln, width=24).grid(row=3, column=1, padx=8, pady=8, sticky="w")
 
-        Label(self.root, text="GBP 汇率").grid(row=4, column=0, padx=16, pady=8, sticky="w")
-        Entry(self.root, textvariable=self.gbp, width=24).grid(row=4, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, text="SEK 对 EUR 汇率").grid(row=4, column=0, padx=16, pady=8, sticky="w")
+        Entry(self.root, textvariable=self.sek, width=24).grid(row=4, column=1, padx=8, pady=8, sticky="w")
 
-        Button(self.root, text="自动获取 ECB 汇率", command=self.fetch_rates).grid(row=5, column=1, padx=8, pady=8, sticky="w")
-        Label(self.root, textvariable=self.rate_source).grid(row=5, column=1, padx=160, pady=8, sticky="w")
+        Label(self.root, text="GBP 对 EUR 汇率").grid(row=5, column=0, padx=16, pady=8, sticky="w")
+        Entry(self.root, textvariable=self.gbp, width=24).grid(row=5, column=1, padx=8, pady=8, sticky="w")
 
-        Button(self.root, text="生成结果", command=self.run).grid(row=6, column=1, padx=8, pady=18, sticky="w")
-        Label(self.root, textvariable=self.status, wraplength=640, justify="left").grid(row=7, column=0, columnspan=3, padx=16, pady=10, sticky="w")
+        Button(self.root, text="自动获取当月 ECB 平均汇率", command=self.fetch_rates).grid(row=6, column=1, padx=8, pady=8, sticky="w")
+        Label(self.root, textvariable=self.rate_source).grid(row=6, column=1, padx=230, pady=8, sticky="w")
+
+        Button(self.root, text="生成结果", command=self.run).grid(row=7, column=1, padx=8, pady=18, sticky="w")
+        Label(self.root, textvariable=self.status, wraplength=690, justify="left").grid(row=8, column=0, columnspan=3, padx=16, pady=10, sticky="w")
         self.root.columnconfigure(1, weight=1)
 
     def choose_file(self):
@@ -81,14 +91,18 @@ class TaxWorkflowApp:
 
     def fetch_rates(self):
         try:
-            self.status.set("正在从 ECB 获取汇率...")
+            month = self.month.get().strip()
+            if not month:
+                messagebox.showerror("缺少月份", "请先填写算税月，例如 2026-MAR。")
+                return
+            self.status.set(f"正在从 ECB 获取 {month} 月平均汇率...")
             self.root.update_idletasks()
-            data = fetch_ecb_rates_to_eur()
+            data = fetch_ecb_monthly_rates_to_eur(month)
             rates = data["rates"]
             self.pln.set(str(rates["PLN"]))
             self.sek.set(str(rates["SEK"]))
             self.gbp.set(str(rates["GBP"]))
-            source = f'ECB {data["date"]}'
+            source = f'ECB月平均 {data["date_range"]}'
             self.rate_source.set(f"汇率来源：{source}")
             self.status.set(f"已自动填入 {source} 汇率，可按申报口径手动修改。")
         except Exception as error:
@@ -99,6 +113,7 @@ class TaxWorkflowApp:
         try:
             input_file = Path(self.csv_path.get())
             month = self.month.get().strip()
+            country = COUNTRY_OPTIONS[self.country.get()]
             if not input_file.exists():
                 messagebox.showerror("缺少文件", "请先选择 Amazon VAT CSV 文件。")
                 return
@@ -115,16 +130,9 @@ class TaxWorkflowApp:
             }
             config["exchange_rate_source"] = self.rate_source.get()
 
-            out_dir = DEFAULT_OUTPUT_DIR / month
-            out_dir.mkdir(parents=True, exist_ok=True)
-            payload = clean_json_value(build_payload(input_file, month, config))
-            (out_dir / "workflow_result.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str, allow_nan=False), encoding="utf-8")
-            pd.DataFrame(payload["summary"]).to_csv(out_dir / "A1-A3汇总.csv", index=False, encoding="utf-8-sig")
-            pd.DataFrame(payload["currency"]).to_csv(out_dir / "币种汇总.csv", index=False, encoding="utf-8-sig")
-            pd.DataFrame(payload["final"]).to_csv(out_dir / "最终税金.csv", index=False, encoding="utf-8-sig")
-            pd.DataFrame(payload["detail"]).to_csv(out_dir / "命中明细.csv", index=False, encoding="utf-8-sig")
-
-            xlsx_path = build_workbook(payload, out_dir / f"A1-A3未代扣代缴输出_{month}.xlsx")
+            payload = build_country_payload(input_file, month, country, config)
+            paths = write_outputs(payload, DEFAULT_OUTPUT_DIR)
+            xlsx_path = paths["xlsx_path"]
             self.status.set(f"完成：{xlsx_path}")
             messagebox.showinfo("生成完成", f"结果已生成：\n{xlsx_path}")
         except Exception as error:

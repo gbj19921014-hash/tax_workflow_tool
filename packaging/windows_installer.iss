@@ -1,7 +1,7 @@
-#define MyAppName "A1-A3税务工作流"
+#define MyAppName "欧洲税务工作流"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Local"
-#define MyAppExeName "A1-A3税务工作流.exe"
+#define MyAppExeName "欧洲税务工作流.exe"
 #define RootDir AddBackslash(SourcePath) + ".."
 
 [Setup]
@@ -12,7 +12,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir={#RootDir}\dist\installer
-OutputBaseFilename=A1-A3税务工作流安装包
+OutputBaseFilename=欧洲税务工作流安装包
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -23,7 +23,7 @@ ArchitecturesInstallIn64BitMode=x64
 Name: "desktopicon"; Description: "创建桌面图标"; GroupDescription: "附加图标："; Flags: checkedonce
 
 [Files]
-Source: "{#RootDir}\dist\A1-A3税务工作流\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#RootDir}\dist\欧洲税务工作流\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
