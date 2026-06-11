@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from desktop_app import detect_activity_periods
+from desktop_app import detect_activity_periods, infer_tax_period
 
 
 class ActivityPeriodDetectionTest(unittest.TestCase):
@@ -24,6 +24,13 @@ class ActivityPeriodDetectionTest(unittest.TestCase):
     def test_returns_all_distinct_valid_months_in_file_order(self):
         csv_path = self._write_csv(["2026-FEB", "2026-APR", "2026-FEB", "invalid"])
         self.assertEqual(detect_activity_periods(csv_path), ["2026-FEB", "2026-APR"])
+
+    def test_infers_germany_natural_quarter(self):
+        self.assertEqual(
+            infer_tax_period("DE", ["2026-MAR", "2026-JAN", "2026-FEB"]),
+            "2026-Q1",
+        )
+        self.assertIsNone(infer_tax_period("DE", ["2026-JAN", "2026-MAR"]))
 
 
 if __name__ == "__main__":

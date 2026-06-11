@@ -3,15 +3,15 @@ import argparse
 import json
 from pathlib import Path
 
-from exchange_rates import fetch_ecb_monthly_rates_to_eur
+from exchange_rates import fetch_ecb_period_rates_to_eur
 from workflow_service import build_country_payload, write_outputs
 
 
 def main():
     parser = argparse.ArgumentParser(description="按国家运行已确认的税务工作流。")
     parser.add_argument("--input", required=True, help="Amazon VAT CSV 文件路径")
-    parser.add_argument("--month", required=True, help="算税月，例如 2026-APR")
-    parser.add_argument("--country", required=True, choices=["IT", "PL"], help="算税国家")
+    parser.add_argument("--month", required=True, help="算税期间，例如 2026-APR 或 2026-Q1")
+    parser.add_argument("--country", required=True, choices=["IT", "PL", "DE"], help="算税国家")
     parser.add_argument(
         "--config",
         default=str(Path(__file__).resolve().parent / "config.json"),
@@ -23,7 +23,7 @@ def main():
 
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     if args.ecb_monthly:
-        rate_data = fetch_ecb_monthly_rates_to_eur(args.month)
+        rate_data = fetch_ecb_period_rates_to_eur(args.month)
         config["exchange_rates_to_eur"][args.month] = rate_data["rates"]
         config["exchange_rate_source"] = f'{rate_data["source"]} {rate_data["date_range"]}'
 

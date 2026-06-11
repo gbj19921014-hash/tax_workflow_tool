@@ -61,14 +61,17 @@ def build_workbook(data, output_path):
     final_sheet["A1"].font = Font(bold=True, color="FFFFFF", size=16)
 
     info_rows = [
-        ("算税月", data.get("activity_period", "")),
+        ("算税期间", data.get("activity_period", "")),
         ("算税国家", data.get("tax_country", "")),
         ("源文件", data.get("source_file", "")),
         ("已注册税号国家", ", ".join(data.get("registered_vat_countries", []))),
         ("未注册欧盟国家", ", ".join(data.get("unregistered_eu_countries", []))),
         (
-            "当月汇率",
-            ", ".join(f"{key}:{value if value is not None else '未填'}" for key, value in data.get("rates_for_month", {}).items()),
+            "期间汇率",
+            ", ".join(
+                f"{key}:{value if value is not None else '未填'}"
+                for key, value in data.get("rates_for_period", data.get("rates_for_month", {})).items()
+            ),
         ),
         ("汇率来源", data.get("exchange_rate_source", "")),
     ]

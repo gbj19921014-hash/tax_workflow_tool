@@ -3,6 +3,8 @@ from datetime import datetime
 from io import StringIO
 from urllib.request import urlopen
 
+from tax_periods import period_to_iso_months
+
 
 ECB_DAILY_CSV_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.csv"
 ECB_HISTORICAL_CSV_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.csv"
@@ -102,6 +104,41 @@ def fetch_ecb_monthly_rates_to_eur(month, currencies=SUPPORTED_CURRENCIES, timeo
         "date_range": iso_month,
         "observation_count": len(observations),
         "source": "ECB月平均",
+        "ecb_quotes_per_eur": observations,
+        "rates": rates,
+    }
+
+
+def fetch_ecb_period_rates_to_eur(period, currencies=SUPPORTED_CURRENCIES, timeout=30):
+    iso_months = period_to_iso_months(period)
+    if len(iso_months) == 1:
+        return fetch_ecb_monthly_rates_to_eur(period, currencies, timeout)
+
+    rates = {"EUR": 1.0}
+    observations = {}
+    for currency in currencies:
+        url = (
+            f"{ECB_DATA_API_URL}/M.{currency}.EUR.SP00.A"
+            f"?startPeriod={iso_months[0]}&endPeriod={iso_months[-1]}&format=csvdata"
+        )
+        with urlopen(url, timeout=timeout) as response:
+            text = response.read().decode("utf-8-sig")
+        rows = list(csv.DictReader(StringIO(text)))
+        quotes = [
+            float(row["OBS_VALUE"])
+            for row in rows
+            if row.get("TIME_PERIOD") in iso_months and row.get("OBS_VALUE")
+        ]
+        if len(quotes) != len(iso_months):
+            raise ValueError(f"ECB Data API 中没有 {period} 的完整 {currency} 月平均汇率。")
+        average_eur_to_currency = sum(quotes) / len(quotes)
+        rates[currency] = round(1 / average_eur_to_currency, 8)
+        observations[currency] = quotes
+    return {
+        "period": period,
+        "date_range": f"{iso_months[0]} 至 {iso_months[-1]}",
+        "observation_count": len(iso_months),
+        "source": "ECB期间月平均",
         "ecb_quotes_per_eur": observations,
         "rates": rates,
     }

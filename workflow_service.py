@@ -4,12 +4,13 @@ from pathlib import Path
 import pandas as pd
 
 from build_workbook import build_workbook
+from germany_workflow import build_germany_payload
 from poland_workflow import build_poland_payload
 from run_workflow import build_payload as build_italy_payload
 from run_workflow import clean_json_value
 
 
-COUNTRY_NAMES = {"IT": "意大利", "PL": "波兰"}
+COUNTRY_NAMES = {"IT": "意大利", "PL": "波兰", "DE": "德国"}
 
 
 def build_country_payload(input_file, month, country, config):
@@ -35,6 +36,8 @@ def build_country_payload(input_file, month, country, config):
         return payload
     if country == "PL":
         return build_poland_payload(input_file, month, config)
+    if country == "DE":
+        return build_germany_payload(input_file, month, config)
     raise ValueError(f"暂不支持国家：{country}")
 
 
