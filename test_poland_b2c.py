@@ -116,7 +116,8 @@ class PolandB2CTest(unittest.TestCase):
         self.assertEqual(part_3a["命中行数"], 2)
         self.assertEqual(part_3a["EUR金额总和"], 369.0)
         self.assertEqual(part_3a["税金EUR"], 69.0)
-        self.assertEqual(payload["final"][0]["金额EUR"], 861.0)
+        self.assertEqual(payload["final"][0]["项目"], "3A命中EUR总和")
+        self.assertEqual(payload["final"][0]["金额EUR"], 369.0)
         self.assertEqual(payload["final"][1]["公式"], "3A命中EUR总和/1.23*0.23")
         self.assertEqual(payload["final"][1]["金额EUR"], 69.0)
 

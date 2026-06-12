@@ -8,6 +8,7 @@ from openpyxl.utils import get_column_letter
 TITLE_FILL = "17365D"
 HEADER_FILL = "1F4E78"
 LABEL_FILL = "D9EAF7"
+REVIEW_FILL = "FFF2CC"
 
 
 def _write_table(sheet, start_row, start_col, headers, rows):
@@ -49,8 +50,6 @@ def build_workbook(data, output_path):
     wb = Workbook()
     final_sheet = wb.active
     final_sheet.title = "最终输出"
-    workflow_sheet = wb.create_sheet("筛选口径")
-    currency_sheet = wb.create_sheet("币种汇总")
     detail_sheet = wb.create_sheet("命中明细")
 
     final_sheet.sheet_view.showGridLines = False
@@ -89,34 +88,20 @@ def build_workbook(data, output_path):
     _format_amount_columns(final_sheet, ["C"], final_start + 1)
     final_sheet.freeze_panes = "A11"
 
-    _write_table(workflow_sheet, 1, 1, ["项目", "名称", "筛选口径", "金额列", "税率"], data.get("summary", []))
-    workflow_sheet.freeze_panes = "A2"
-
-    _write_table(currency_sheet, 1, 1, ["项目", "币种", "行数", "原币合计", "折EUR金额", "缺少汇率行数"], data.get("currency", []))
-    _format_amount_columns(currency_sheet, ["D", "E"], 2)
-    currency_sheet.freeze_panes = "A2"
-
-    detail_headers = [
-        "项目",
-        "项目名称",
-        "ACTIVITY_PERIOD",
-        "TAX_COLLECTION_RESPONSIBILITY",
-        "TRANSACTION_TYPE",
-        "EXPORT_OUTSIDE_EU",
-        "PRICE_OF_ITEMS_VAT_RATE_PERCENT",
-        "TOTAL_ACTIVITY_VALUE_VAT_AMT",
-        "SALE_DEPART_COUNTRY",
-        "SALE_ARRIVAL_COUNTRY",
-        "BUYER_VAT_NUMBER",
-        "TRANSACTION_CURRENCY_CODE",
-        "TOTAL_ACTIVITY_VALUE_AMT_VAT_INCL",
-        "_original_amount",
-        "_eur_amount",
-        "TRANSACTION_EVENT_ID",
-        "ACTIVITY_TRANSACTION_ID",
-    ]
-    _write_table(detail_sheet, 1, 1, detail_headers, data.get("detail", []))
-    _format_amount_columns(detail_sheet, ["M", "N", "O"], 2)
+    detail_rows = data.get("detail", [])
+    detail_headers = []
+    for row in detail_rows:
+        for header in row:
+            if header not in detail_headers:
+                detail_headers.append(header)
+    _write_table(detail_sheet, 1, 1, detail_headers, detail_rows)
+    if "人工确认提示" in detail_headers:
+        review_column = detail_headers.index("人工确认提示") + 1
+        review_fill = PatternFill("solid", fgColor=REVIEW_FILL)
+        for row_index in range(2, detail_sheet.max_row + 1):
+            if detail_sheet.cell(row_index, review_column).value:
+                for column_index in range(1, detail_sheet.max_column + 1):
+                    detail_sheet.cell(row_index, column_index).fill = review_fill
     detail_sheet.freeze_panes = "A2"
 
     for sheet in wb.worksheets:

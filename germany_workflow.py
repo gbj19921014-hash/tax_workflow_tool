@@ -93,13 +93,17 @@ def build_germany_payload(input_file, period, config):
         ],
         index=source.index,
     )
-    part_c = source[
+    part_c_mask = (
         common
         & source["SALE_DEPART_COUNTRY"].eq("DE")
         & source["SALE_ARRIVAL_COUNTRY"].isin(EU_COUNTRIES - {"DE"})
         & vat_rate.gt(0)
         & buyer_vat_not_blank
-        & ~cross_border_valid
+    )
+    part_c = source[part_c_mask].copy()
+    part_c["人工确认提示"] = [
+        "税号格式看似有效，请人工确认" if is_valid else ""
+        for is_valid in cross_border_valid[part_c_mask]
     ]
     self_format_valid = source["BUYER_VAT_NUMBER"].map(basic_tax_number_format_ok)
     part_d = source[
@@ -114,7 +118,7 @@ def build_germany_payload(input_file, period, config):
     sections = [
         summarize_germany("A", "B2C EU→DE", "CQ=SELLER；F非COMMINGLING_BUY；CJ仅NO和空白；BP=欧盟27国；BQ=DE；CA空白；BB=GBP/EUR/SEK/PLN；B列仅校验季度。", part_a, period, rates),
         summarize_germany("B", "B2C DE→未注册税号欧盟国家", "CQ=SELLER；F非COMMINGLING_BUY；CJ仅NO和空白；BP=DE；BQ=欧盟27国排除DE/ES/FR/IT/NL/PL；CA空白；BB=GBP/EUR/SEK/PLN；B列仅校验季度。", part_b, period, rates),
-        summarize_germany("C", "无效B2B DE→EU", "CQ=SELLER；F非COMMINGLING_BUY；CJ仅NO和空白；BP=DE；BQ=其他欧盟国家；AE>0；CA非空且与BQ国家前缀不符；BB=GBP/EUR/SEK/PLN；B列仅校验季度。", part_c, period, rates),
+        summarize_germany("C", "待确认B2B DE→EU", "CQ=SELLER；F非COMMINGLING_BUY；CJ仅NO和空白；BP=DE；BQ=其他欧盟国家；AE>0；CA非空；BB=GBP/EUR/SEK/PLN；B列仅校验季度。税号格式看似有效的记录仍计入，并标黄提示人工确认。", part_c, period, rates),
         summarize_germany("D", "德国本土B2B", "CQ=SELLER；F非COMMINGLING_BUY；CJ仅NO和空白；BP=DE；BQ=DE；CA非空且自身基本格式有效，不要求德国税号；BB=GBP/EUR/SEK/PLN；B列仅校验季度。", part_d, period, rates),
     ]
     summary = [section["summary"] for section in sections]
