@@ -109,8 +109,8 @@ def fetch_ecb_monthly_rates_to_eur(month, currencies=SUPPORTED_CURRENCIES, timeo
     }
 
 
-def fetch_ecb_period_rates_to_eur(period, currencies=SUPPORTED_CURRENCIES, timeout=30):
-    iso_months = period_to_iso_months(period)
+def fetch_ecb_period_rates_to_eur(period, currencies=SUPPORTED_CURRENCIES, timeout=30, activity_periods=None):
+    iso_months = period_to_iso_months(period, activity_periods=activity_periods)
     if len(iso_months) == 1:
         return fetch_ecb_monthly_rates_to_eur(period, currencies, timeout)
 

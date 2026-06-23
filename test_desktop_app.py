@@ -30,6 +30,22 @@ class ActivityPeriodDetectionTest(unittest.TestCase):
             infer_tax_period("DE", ["2026-MAR", "2026-JAN", "2026-FEB"]),
             "2026-Q1",
         )
+        self.assertEqual(
+            infer_tax_period("FR", ["2026-MAR", "2026-JAN", "2026-FEB"]),
+            "2026-Q1",
+        )
+        self.assertEqual(
+            infer_tax_period("NL", ["2026-MAR", "2026-JAN", "2026-FEB"]),
+            "2026-Q1",
+        )
+        self.assertEqual(
+            infer_tax_period("ES", ["2026-MAR", "2026-JAN", "2026-FEB"]),
+            "2026-Q1",
+        )
+        self.assertEqual(
+            infer_tax_period("GB", ["2026-MAR", "2026-FEB", "2026-APR"]),
+            "2026-Q1",
+        )
         self.assertIsNone(infer_tax_period("DE", ["2026-JAN", "2026-MAR"]))
 
 

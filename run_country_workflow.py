@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description="按国家运行已确认的税务工作流。")
     parser.add_argument("--input", required=True, help="Amazon VAT CSV 文件路径")
     parser.add_argument("--month", required=True, help="算税期间，例如 2026-APR 或 2026-Q1")
-    parser.add_argument("--country", required=True, choices=["IT", "PL", "DE"], help="算税国家")
+    parser.add_argument("--country", required=True, choices=["IT", "PL", "DE", "FR", "NL", "ES", "GB"], help="算税国家")
     parser.add_argument(
         "--config",
         default=str(Path(__file__).resolve().parent / "config.json"),

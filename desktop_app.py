@@ -10,13 +10,13 @@ from tkinter.ttk import Combobox
 import pandas as pd
 
 from exchange_rates import fetch_ecb_period_rates_to_eur
-from tax_periods import detect_natural_quarter
+from tax_periods import detect_natural_quarter, detect_uk_quarter, uk_quarter_periods
 from workflow_service import build_country_payload, write_outputs
 
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = Path.home() / "Desktop" / "税务工作流输出"
-COUNTRY_OPTIONS = {"意大利 (IT)": "IT", "波兰 (PL)": "PL", "德国 (DE)": "DE"}
+COUNTRY_OPTIONS = {"意大利 (IT)": "IT", "波兰 (PL)": "PL", "德国 (DE)": "DE", "法国 (FR)": "FR", "荷兰 (NL)": "NL", "西班牙 (ES)": "ES", "英国 (GB)": "GB"}
 ACTIVITY_PERIOD_PATTERN = re.compile(r"^\d{4}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$")
 
 
@@ -49,8 +49,10 @@ def infer_tax_period(country, activity_periods):
     country = country.strip().upper()
     if country in {"IT", "PL"}:
         return activity_periods[0] if len(activity_periods) == 1 else None
-    if country == "DE":
+    if country in {"DE", "FR", "NL", "ES"}:
         return detect_natural_quarter(activity_periods)
+    if country == "GB":
+        return detect_uk_quarter(activity_periods)
     return None
 
 
@@ -158,7 +160,8 @@ class TaxWorkflowApp:
                 return
             self.status.set(f"正在从 ECB 获取 {month} 期间平均汇率...")
             self.root.update_idletasks()
-            data = fetch_ecb_period_rates_to_eur(month)
+            activity_periods = uk_quarter_periods(month) if self._selected_country() == "GB" else None
+            data = fetch_ecb_period_rates_to_eur(month, activity_periods=activity_periods)
             rates = data["rates"]
             self.pln.set(str(rates["PLN"]))
             self.sek.set(str(rates["SEK"]))
