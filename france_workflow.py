@@ -51,11 +51,12 @@ def build_france_payload(input_file, period, config):
     source = pd.read_csv(input_file, dtype=str, encoding="utf-8-sig")
     expected_months = natural_quarter_periods(period)
     actual_months = sorted(source["ACTIVITY_PERIOD"].dropna().str.strip().str.upper().unique())
-    if set(actual_months) != set(expected_months):
+    if not set(expected_months).issubset(actual_months):
         raise ValueError(
             f"CSV 的 B 列月份与 {period} 不一致。应包含：{'、'.join(expected_months)}；"
             f"实际包含：{'、'.join(actual_months) or '无'}。"
         )
+    source = source[source["ACTIVITY_PERIOD"].str.strip().str.upper().isin(expected_months)].copy()
 
     seller = source["TAX_COLLECTION_RESPONSIBILITY"].eq("SELLER")
     buyer_vat_blank = is_blank(source["BUYER_VAT_NUMBER"])
@@ -84,7 +85,7 @@ def build_france_payload(input_file, period, config):
         summarize_france(
             "A",
             "自行缴税订单",
-            "CQ=SELLER；BB=GBP/EUR/SEK/PLN；B列仅校验季度；满足以下任一条件："
+            "CQ=SELLER；BB=GBP/EUR/SEK/PLN；B列仅保留所选季度，跳过其他月份；满足以下任一条件："
             "1）AE非空且不等于0，CA非空，BP=FR，BQ=欧盟国家；"
             "2）AE不等于0，CA空白，BP=欧盟国家，BQ=FR。",
             part_a,

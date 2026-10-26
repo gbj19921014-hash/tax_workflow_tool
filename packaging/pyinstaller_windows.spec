@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files
 
 
 ROOT = Path.cwd()
@@ -11,7 +12,7 @@ a = Analysis(
     [str(APP_DIR / "desktop_app.py")],
     pathex=[str(APP_DIR)],
     binaries=[],
-    datas=[(str(APP_DIR / "config.json"), ".")],
+    datas=[(str(APP_DIR / "config.json"), ".")] + collect_data_files("certifi"),
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

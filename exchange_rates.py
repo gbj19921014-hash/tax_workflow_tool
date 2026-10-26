@@ -1,7 +1,10 @@
 import csv
+import ssl
 from datetime import datetime
 from io import StringIO
 from urllib.request import urlopen
+
+import certifi
 
 from tax_periods import period_to_iso_months
 
@@ -12,6 +15,12 @@ ECB_DATA_API_URL = "https://data-api.ecb.europa.eu/service/data/EXR"
 SUPPORTED_CURRENCIES = ("PLN", "SEK", "GBP")
 
 
+def ecb_ssl_context():
+    context = ssl.create_default_context()
+    context.load_verify_locations(cafile=certifi.where())
+    return context
+
+
 def month_to_iso(month):
     try:
         return datetime.strptime(month, "%Y-%b").strftime("%Y-%m")
@@ -20,7 +29,7 @@ def month_to_iso(month):
 
 
 def fetch_ecb_rates_to_eur(currencies=SUPPORTED_CURRENCIES, timeout=15):
-    with urlopen(ECB_DAILY_CSV_URL, timeout=timeout) as response:
+    with urlopen(ECB_DAILY_CSV_URL, timeout=timeout, context=ecb_ssl_context()) as response:
         text = response.read().decode("utf-8-sig")
 
     rows = list(csv.DictReader(StringIO(text)))
@@ -87,7 +96,7 @@ def fetch_ecb_monthly_rates_to_eur(month, currencies=SUPPORTED_CURRENCIES, timeo
             f"{ECB_DATA_API_URL}/M.{currency}.EUR.SP00.A"
             f"?startPeriod={iso_month}&endPeriod={iso_month}&format=csvdata"
         )
-        with urlopen(url, timeout=timeout) as response:
+        with urlopen(url, timeout=timeout, context=ecb_ssl_context()) as response:
             text = response.read().decode("utf-8-sig")
 
         rows = list(csv.DictReader(StringIO(text)))
@@ -121,7 +130,7 @@ def fetch_ecb_period_rates_to_eur(period, currencies=SUPPORTED_CURRENCIES, timeo
             f"{ECB_DATA_API_URL}/M.{currency}.EUR.SP00.A"
             f"?startPeriod={iso_months[0]}&endPeriod={iso_months[-1]}&format=csvdata"
         )
-        with urlopen(url, timeout=timeout) as response:
+        with urlopen(url, timeout=timeout, context=ecb_ssl_context()) as response:
             text = response.read().decode("utf-8-sig")
         rows = list(csv.DictReader(StringIO(text)))
         quotes = [

@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 
 import pandas as pd
@@ -73,6 +74,12 @@ def exchange_to_eur(amount, currency, month, rates):
     if rate is None:
         return None
     return float(amount) * float(rate)
+
+
+def italy_tax(amount, vat_rate):
+    rate = Decimal(str(vat_rate))
+    tax = Decimal(str(amount)) / (Decimal("1") + rate) * rate
+    return float(tax.quantize(Decimal("0.01"), rounding=ROUND_DOWN))
 
 
 def summarize(code, name, rule, rows, amount_col, month, rates):
@@ -208,7 +215,7 @@ def build_payload(input_file, month, config):
     currency = [row for section in sections for row in section["currency"]]
     detail = [row for section in sections for row in section["detail"]]
     eur_total = round(sum(row["EUR金额总和"] for row in summary), 2)
-    tax = round(eur_total / (1 + config["vat_rate"]) * config["vat_rate"], 2)
+    tax = italy_tax(eur_total, config["vat_rate"])
 
     return {
         "source_file": str(input_file),

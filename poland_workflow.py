@@ -102,6 +102,8 @@ def build_poland_payload(input_file, month, config):
         & vat_amount.ne(0)
         & allowed_currency
     ]
+    # A source row matched by 2A belongs to 2A only in summaries and detail.
+    part_3a_exclusive = part_3a.loc[~part_3a.index.isin(part_2a.index)]
 
     sections = [
         summarize_poland(
@@ -131,8 +133,8 @@ def build_poland_payload(input_file, month, config):
         summarize_poland(
             "3A",
             "假的欧盟境内 B2B 23%",
-            "B=算税月；CQ=SELLER；CA非空；BP=PL；AQ非空且不等于0；BB=EUR/PLN/SEK；汇总BA；不限制BQ。",
-            part_3a,
+            "B=算税月；CQ=SELLER；CA非空；BP=PL；AQ非空且不等于0；BB=EUR/PLN/SEK；汇总BA；不限制BQ；排除已命中2A的源记录。",
+            part_3a_exclusive,
             month,
             rates,
         ),
@@ -141,9 +143,10 @@ def build_poland_payload(input_file, month, config):
     summary = [section["summary"] for section in sections]
     currency = [row for section in sections for row in section["currency"]]
     detail = [row for section in sections for row in section["detail"]]
-    part_3a_summary = next(row for row in summary if row["项目"] == "3A")
-    part_3a_eur_total = part_3a_summary["EUR金额总和"]
-    tax = round(part_3a_eur_total / (1 + VAT_RATE) * VAT_RATE, 2)
+    b2b_summary = [row for row in summary if row["项目"] in {"2A", "3A"}]
+    b2b_eur_total = round(sum(row["EUR金额总和"] for row in b2b_summary), 2)
+    missing_rates = sum(row["缺少汇率行数"] for row in b2b_summary)
+    tax = round(b2b_eur_total / (1 + VAT_RATE) * VAT_RATE, 2)
 
     return {
         "source_file": str(input_file),
@@ -159,12 +162,12 @@ def build_poland_payload(input_file, month, config):
         "currency": currency,
         "detail": detail,
         "final": [
-            {"项目": "3A命中EUR总和", "金额EUR": part_3a_eur_total},
+            {"项目": "2A+3A去重后命中EUR总和", "金额EUR": b2b_eur_total},
             {
                 "项目": "税金",
-                "公式": "3A命中EUR总和/1.23*0.23",
+                "公式": "(2A金额+去重后3A金额)/1.23*0.23",
                 "金额EUR": tax,
-                "缺少汇率行数": part_3a_summary["缺少汇率行数"],
+                "缺少汇率行数": missing_rates,
             },
         ],
     }

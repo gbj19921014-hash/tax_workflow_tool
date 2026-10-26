@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import math
 import re
 import sys
 import traceback
@@ -10,7 +11,7 @@ from tkinter.ttk import Combobox
 import pandas as pd
 
 from exchange_rates import fetch_ecb_period_rates_to_eur
-from tax_periods import detect_natural_quarter, detect_uk_quarter, uk_quarter_periods
+from tax_periods import detect_natural_quarter, detect_uk_quarter, natural_quarter_periods, uk_quarter_periods
 from workflow_service import build_country_payload, write_outputs
 
 
@@ -49,6 +50,14 @@ def infer_tax_period(country, activity_periods):
     country = country.strip().upper()
     if country in {"IT", "PL"}:
         return activity_periods[0] if len(activity_periods) == 1 else None
+    if country == "FR":
+        complete_quarters = {
+            f"{value[:4]}-Q{quarter}"
+            for value in activity_periods
+            for quarter in range(1, 5)
+            if set(natural_quarter_periods(f"{value[:4]}-Q{quarter}")).issubset(activity_periods)
+        }
+        return next(iter(complete_quarters)) if len(complete_quarters) == 1 else None
     if country in {"DE", "FR", "NL", "ES"}:
         return detect_natural_quarter(activity_periods)
     if country == "GB":
@@ -150,7 +159,14 @@ class TaxWorkflowApp:
         value = value.strip()
         if not value:
             return None
-        return float(value)
+        value = re.sub(r"\s*EUR\s*$", "", value, flags=re.IGNORECASE).strip()
+        try:
+            rate = float(value)
+        except ValueError as error:
+            raise ValueError("汇率请填写正数，例如 0.2289 或 0.2289 EUR。") from error
+        if not math.isfinite(rate) or rate <= 0:
+            raise ValueError("汇率必须是大于 0 的有限数值。")
+        return rate
 
     def fetch_rates(self):
         try:

@@ -9,7 +9,7 @@ from germany_workflow import build_germany_payload
 from netherlands_workflow import build_netherlands_payload
 from poland_workflow import build_poland_payload
 from run_workflow import build_payload as build_italy_payload
-from run_workflow import clean_json_value
+from run_workflow import clean_json_value, italy_tax
 from spain_workflow import build_spain_payload
 from uk_workflow import build_uk_payload
 
@@ -28,10 +28,7 @@ def build_country_payload(input_file, month, country, config):
         for row in payload["summary"]:
             row["项目"] = row.pop("A项")
             row["税率"] = country_config["vat_rate"]
-            row["税金EUR"] = round(
-                row["EUR金额总和"] / (1 + country_config["vat_rate"]) * country_config["vat_rate"],
-                2,
-            )
+            row["税金EUR"] = italy_tax(row["EUR金额总和"], country_config["vat_rate"])
         for row in payload["currency"]:
             row["项目"] = row.pop("A项")
         for row in payload["detail"]:
@@ -54,6 +51,10 @@ def build_country_payload(input_file, month, country, config):
 
 
 def write_outputs(payload, output_root):
+    if payload["tax_country"] != "GB":
+        missing = sorted({row["币种"] for row in payload["currency"] if row["缺少汇率行数"]})
+        if missing:
+            raise ValueError(f"命中订单缺少 {'、'.join(missing)} 对 EUR 汇率，请填写后重新生成。")
     country = payload["tax_country"]
     month = payload["activity_period"]
     out_dir = Path(output_root) / country / month

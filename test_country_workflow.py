@@ -30,7 +30,7 @@ class CountryWorkflowIntegrationTest(unittest.TestCase):
         payload = build_country_payload(input_file, "2026-APR", "IT", self.config)
         self.assertEqual([row["命中行数"] for row in payload["summary"]], [3, 0, 0])
         self.assertEqual(payload["final"][0]["金额EUR"], 294.68)
-        self.assertEqual(payload["final"][1]["金额EUR"], 53.14)
+        self.assertEqual(payload["final"][1]["金额EUR"], 53.13)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             paths = write_outputs(payload, temp_dir)
@@ -53,10 +53,10 @@ class CountryWorkflowIntegrationTest(unittest.TestCase):
         }
         config["exchange_rate_source"] = "ECB月平均 2026-02"
         payload = build_country_payload(input_file, "2026-FEB", "PL", config)
-        self.assertEqual([row["命中行数"] for row in payload["summary"]], [0, 0, 9, 10])
-        self.assertEqual(payload["final"][0]["项目"], "3A命中EUR总和")
+        self.assertEqual([row["命中行数"] for row in payload["summary"]], [0, 0, 9, 1])
+        self.assertEqual(payload["final"][0]["项目"], "2A+3A去重后命中EUR总和")
         self.assertEqual(payload["final"][0]["金额EUR"], 82.3)
-        self.assertEqual(payload["final"][1]["公式"], "3A命中EUR总和/1.23*0.23")
+        self.assertEqual(payload["final"][1]["公式"], "(2A金额+去重后3A金额)/1.23*0.23")
         self.assertEqual(payload["final"][1]["金额EUR"], 15.39)
 
         with tempfile.TemporaryDirectory() as temp_dir:

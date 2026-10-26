@@ -1,5 +1,5 @@
 #define MyAppName "欧洲税务工作流"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Local"
 #define MyAppExeName "欧洲税务工作流.exe"
 #define RootDir AddBackslash(SourcePath) + ".."
